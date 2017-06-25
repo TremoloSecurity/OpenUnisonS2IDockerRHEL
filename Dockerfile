@@ -1,5 +1,4 @@
-# openunison-centos7
-FROM centos:7
+FROM registry.access.redhat.com/rhel7
 
 MAINTAINER Tremolo Security, Inc. - Docker <docker@tremolosecurity.com>
 
@@ -10,13 +9,28 @@ ENV BUILDER_VERSION=1.0 \
     JAVA_OPTS="-Djava.awt.headless=true -Djava.security.egd=file:/dev/./urandom" \
     TOMCAT_VERSION="8.5.15"
 
-LABEL io.k8s.description="Platform for building Tremolo Security OpenUnison" \
-      io.k8s.display-name="OpenUnison Builder 1.0.11" \
-      io.openshift.expose-services="8080:8443" \
-      io.openshift.tags="builder,1.0.11,sso,identity management" \
-      io.openshift.s2i.scripts-url="image:///usr/local/bin/s2i"
+    LABEL name="OpenUnison" \
+          vendor="Tremolo Security, Inc." \
+          version="1.0.11" \
+          release="2017061801" \
+    ### Recommended labels below
+          url="https://www.tremolosecurity.com/unison/" \
+          summary="Platform for building Tremolo Security OpenUnison" \
+          description="OpenUnison is an identity management platforms that can provide solutions for applications and infrastructure. Services include user provisioning, web access management & SSO, LDAP virtual directory and a user self service portal." \
+          run='docker run -tdi --name ${NAME} -v /path/to/unison:/usr/local/tremolo/tremolo-service/external:Z ${IMAGE}' \
+          io.k8s.description="Cloud Native Identity Management" \
+          io.k8s.display-name="OpenUnison Builder 1.0.11" \
+          io.openshift.expose-services="8080:http,8443:https" \
+          io.openshift.tags="identity management,sso,user provisioning,devops,saml,openid connect" \
+          io.openshift.tags="builder,1.0.11,sso,identity management" \
+          io.openshift.s2i.scripts-url="image:///usr/local/bin/s2i"
 
-RUN yum install -y unzip which tar java-${JDK_VERSION}-openjdk-devel.x86_64 net-tools.x86_64 && \
+
+RUN   yum clean all && yum-config-manager --disable \* &> /dev/null && \
+### Add necessary Red Hat repos here
+    yum-config-manager --enable rhel-7-server-rpms,rhel-7-server-optional-rpms &> /dev/null && \
+    yum -y update-minimal --security --sec-severity=Important --sec-severity=Critical --setopt=tsflags=nodocs && \
+    yum install -y --setopt=tsflags=nodocs golang-github-cpuguy83-go-md2man unzip which tar java-${JDK_VERSION}-openjdk-devel.x86_64 net-tools.x86_64 && \
     yum clean all -y && \
     echo -e "\nInstalling Tomcat $TOMCAT_VERSION" && \
     curl -v https://www.apache.org/dist/tomcat/tomcat-8/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz | tar -zx -C /usr/local && \
@@ -27,7 +41,9 @@ RUN yum install -y unzip which tar java-${JDK_VERSION}-openjdk-devel.x86_64 net-
     mkdir -p /etc/openunison && \
     mkdir -p /usr/local/tremolo/tremolo-service && \
     groupadd -r tremoloadmin -g 433 && \
-    useradd -u 431 -r -g tremoloadmin -d /usr/local/tremolo/tremolo-service -s /sbin/nologin -c "OpenUnison Docker image user" tremoloadmin
+    useradd -u 431 -r -g tremoloadmin -d /usr/local/tremolo/tremolo-service -s /sbin/nologin -c "OpenUnison Docker image user" tremoloadmin && \
+    go-md2man -in /tmp/help.md -out /help.1 && yum -y remove golang-github-cpuguy83-go-md2man && \
+    yum -y clean all
 
 ADD server.xml /usr/local/apache-tomcat-${TOMCAT_VERSION}/conf/
 ADD run.sh /usr/local/apache-tomcat-${TOMCAT_VERSION}/bin/
