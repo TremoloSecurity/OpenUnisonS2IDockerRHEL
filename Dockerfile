@@ -7,7 +7,8 @@ ENV BUILDER_VERSION=1.0 \
     MAVEN_VERSION=3.3.9 \
     CATALINA_OPTS="-Xms512M -Xmx1024M -server -XX:+UseParallelGC" \
     JAVA_OPTS="-Djava.awt.headless=true -Djava.security.egd=file:/dev/./urandom" \
-    TOMCAT_VERSION="8.5.15"
+    TOMCAT_VERSION="8.5.15" \
+    CLASSPATH="/tmp/quartz"
 
     LABEL name="OpenUnison" \
           vendor="Tremolo Security, Inc." \
@@ -31,7 +32,7 @@ RUN   yum clean all && yum-config-manager --disable \* &> /dev/null && \
 ### Add necessary Red Hat repos here
     yum-config-manager --enable rhel-7-server-rpms,rhel-7-server-optional-rpms &> /dev/null && \
     yum -y update-minimal --security --sec-severity=Important --sec-severity=Critical --setopt=tsflags=nodocs && \
-    yum install -y --setopt=tsflags=nodocs golang-github-cpuguy83-go-md2man unzip which tar java-${JDK_VERSION}-openjdk-devel.x86_64 net-tools.x86_64 && \
+    yum install -y --setopt=tsflags=nodocs golang-github-cpuguy83-go-md2man unzip which tar java-${JDK_VERSION}-openjdk-devel.x86_64 net-tools.x86_64 python && \
     yum clean all -y && \
     echo -e "\nInstalling Tomcat $TOMCAT_VERSION" && \
     curl -v https://www.apache.org/dist/tomcat/tomcat-8/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz | tar -zx -C /usr/local && \
@@ -46,8 +47,9 @@ RUN   yum clean all && yum-config-manager --disable \* &> /dev/null && \
     go-md2man -in /tmp/help.md -out /help.1 && yum -y remove golang-github-cpuguy83-go-md2man && \
     yum -y clean all
 
-ADD server.xml /usr/local/apache-tomcat-${TOMCAT_VERSION}/conf/
-ADD run.sh /usr/local/apache-tomcat-${TOMCAT_VERSION}/bin/
+ADD server_template.xml /usr/local/tomcat/conf/
+ADD run.sh /usr/local/tomcat/bin/
+ADD eval_secrets.py /usr/local/tomcat/bin/
 
 # Copy the S2I scripts to /usr/local/bin since I updated the io.openshift.s2i.scripts-url label
 COPY ./s2i/bin/ /usr/local/bin/s2i
