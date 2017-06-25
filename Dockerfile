@@ -25,6 +25,7 @@ ENV BUILDER_VERSION=1.0 \
           io.openshift.tags="builder,1.0.11,sso,identity management" \
           io.openshift.s2i.scripts-url="image:///usr/local/bin/s2i"
 
+ADD metadata/help.md /tmp/help.md
 
 RUN   yum clean all && yum-config-manager --disable \* &> /dev/null && \
 ### Add necessary Red Hat repos here
