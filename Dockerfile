@@ -61,6 +61,8 @@ RUN chown -R tremoloadmin:tremoloadmin \
     /usr/local/bin/mvn \
   && chmod +x /usr/local/apache-tomcat-${TOMCAT_VERSION}/bin/run.sh
 
+VOLUME /etc/openunison
+
 USER 431
 
 EXPOSE 8080
